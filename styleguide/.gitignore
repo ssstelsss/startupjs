@@ -63,3 +63,6 @@ buck-out/
 
 # Test screenshots
 /artifacts/
+
+# certificates
+/certificates

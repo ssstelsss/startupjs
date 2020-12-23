@@ -1,7 +1,11 @@
+const getBackend = require('@startupjs/backend')
 const http = require('http')
 const https = require('https')
 const conf = require('nconf')
-const getBackend = require('@startupjs/backend')
+const httpsLocalhost = require('https-localhost')()
+
+process.env.CERT_PATH = process.cwd() + '/certificates'
+
 const start = Date.now()
 let server = null
 let wsServer = null
@@ -16,6 +20,8 @@ module.exports = async (options) => {
   // Init error handling route
   const error = options.error(options)
 
+  const certs = await httpsLocalhost.getCerts()
+
   require('./express')(backend, appRoutes, error, options
     , ({ expressApp, upgrade, wss }) => {
       wsServer = wss
@@ -24,7 +30,11 @@ module.exports = async (options) => {
       if (options.https) {
         server = https.createServer(options.https, expressApp)
       } else {
-        server = http.createServer(expressApp)
+        if (conf.get('NODE_ENV') === 'development') {
+          server = https.createServer(certs, expressApp)
+        } else {
+          server = http.createServer(expressApp)
+        }
       }
       if (conf.get('SERVER_REQUEST_TIMEOUT') != null) {
         server.timeout = ~~conf.get('SERVER_REQUEST_TIMEOUT')
